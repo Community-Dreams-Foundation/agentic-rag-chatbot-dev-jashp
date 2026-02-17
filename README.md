@@ -1,11 +1,14 @@
 [![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-22041afd0340ce965d47ae6ef1cefeee28c7c493a6346c4f15d667ab976d596c.svg)](https://classroom.github.com/a/P5MLsfQv)
+
 # Agentic RAG Chatbot - Hackathon Challenge
 
 ## Overview
+
 Build a chatbot (Web App or CLI) that demonstrates how you’d ship an AI-first product feature:
+
 - **File-grounded Q&A (RAG)** with **citations**
 - **Durable memory** written to markdown
-- *(Optional)* **Safe compute** tool calling with Open-Meteo time series analysis
+- _(Optional)_ **Safe compute** tool calling with Open-Meteo time series analysis
 
 You may implement one feature or multiple. Partial implementations are acceptable.
 
@@ -46,16 +49,19 @@ You may implement one feature or multiple. Partial implementations are acceptabl
 ---
 
 ## Participant Info (Required)
-- Full Name:
-- Email:
-- GitHub Username:
+
+- Full Name: Jash Patel
+- Email: getjashpatel@gmail.com
+- GitHub Username: dev-jashp
 
 ---
 
 ## What You Need To Build
 
 ### Feature A - File Upload + RAG (Core)
+
 Users can:
+
 - Upload files and add them to a RAG pipeline (parse → chunk → index)
 - Ask questions later and receive answers grounded in uploaded content
 - Provide **citations** pointing to source chunks/sections
@@ -65,6 +71,7 @@ Users can:
 Suggested test data: arXiv PDFs/HTML (open access).
 
 Extra points:
+
 - Hybrid retrieval (BM25 + embeddings), reranking, metadata filters
 - Smart chunking (section-aware, semantic boundaries)
 - Knowledge-graph flavored RAG
@@ -72,6 +79,7 @@ Extra points:
 ---
 
 ### Feature B - Persistent Memory (Core-ish)
+
 Add a memory subsystem that writes selective, high-signal knowledge to:
 
 - `USER_MEMORY.md`  
@@ -83,6 +91,7 @@ Add a memory subsystem that writes selective, high-signal knowledge to:
   Example: “Asset Management interfaces often with Project Finance”, “Recurring workflow bottleneck is X”.
 
 Rules:
+
 - **Selective** (no transcript dumping)
 - **High-signal and reusable**
 - **Avoid storing secrets or sensitive information**
@@ -94,6 +103,7 @@ Use an internal decision structure like:
 ---
 
 ### Feature C - Safe Python Sandbox + Open-Meteo (Optional)
+
 Spin up a Python environment using llm-sandbox (or similar isolation) and allow the chatbot to execute an analysis task by calling a public time series API.
 
 Use this API (no key required): Open-Meteo (historical + forecast weather time series).
@@ -101,6 +111,7 @@ Use this API (no key required): Open-Meteo (historical + forecast weather time s
 - **https://open-meteo.com/**
 
 The Chatbot should:
+
 - Call Open-Meteo for a location/time range
 - Retrieve time series data
 - Compute basic analytics (rolling averages, volatility, missingness checks, anomaly flags, etc.)
@@ -111,7 +122,9 @@ We care about **safe execution boundaries + clean tool interface**, not perfect 
 ---
 
 ## Deliverables (Required)
+
 Your repo must include:
+
 - `README.md` with **setup + run instructions**
 - A brief architecture overview in `ARCHITECTURE.md` (or in this README)
 - A working demo flow (based on what you implemented):
@@ -129,9 +142,11 @@ Your repo must include:
 ## Submission Rules (Important)
 
 ### 1) Any language / any stack
+
 You may use any language, framework, model, and any vector DB (FAISS/Chroma/pgvector/etc.).
 
 ### 2) One universal judge command (Required)
+
 Judges must be able to run:
 
 ```bash
@@ -140,8 +155,8 @@ make sanity
 
 Your `make sanity` must:
 
-* Run a minimal end-to-end flow (based on what you implemented)
-* Produce this file:
+- Run a minimal end-to-end flow (based on what you implemented)
+- Produce this file:
 
 ```text
 artifacts/sanity_output.json
@@ -164,6 +179,7 @@ Add your video link here:
 PASTE YOUR LINK HERE
 
 ## 4) Important
+
 Submissions missing the Participant Info block may be deprioritized during review.
 
 ---
@@ -171,21 +187,26 @@ Submissions missing the Participant Info block may be deprioritized during revie
 ## GitHub Classroom Submission (Required)
 
 ### Step 1 — Create your submission repo
-1) Open the **GitHub Classroom invite link** provided to you after registration.
-2) Accept the assignment.
-3) GitHub Classroom will automatically create a **new repository under your GitHub account**.
+
+1. Open the **GitHub Classroom invite link** provided to you after registration.
+2. Accept the assignment.
+3. GitHub Classroom will automatically create a **new repository under your GitHub account**.
    - This new repo is your official submission repo.
 
 Important:
+
 - Do **not** submit work in the **agentic-rag-chatbot-template** repository. That is the starter/template repo.
 - You must complete your work in the **repository created for you by GitHub Classroom** after you accept the assignment link.
 - Only the GitHub Classroom-created repo will be evaluated.
 
 ### Step 2 — Work in your submission repo
+
 Clone your Classroom repo and push your commits as usual.
 
 ### Step 3 — What you must include before the deadline
+
 In your Classroom repo:
+
 - Fill in the **Quick Start** section in `README.md` (exact run commands)
 - Paste your **Video Walkthrough** link in `README.md`
 - Ensure `make sanity` works and generates:
@@ -195,6 +216,7 @@ In your Classroom repo:
   - `COMPANY_MEMORY.md`
 
 ### Step 4 — Final submission
+
 Your submission is automatic once your code is pushed to your Classroom repo.
 No separate zip upload is required unless explicitly instructed.
 
@@ -206,26 +228,26 @@ We evaluate holistically:
 
 ### Correctness & UX
 
-* RAG answers are grounded and cite sources
-* Graceful behavior when retrieval fails (no hallucinations)
+- RAG answers are grounded and cite sources
+- Graceful behavior when retrieval fails (no hallucinations)
 
 ### Engineering Quality
 
-* Clean structure and modular design
-* Readable code and thoughtful naming
-* Error handling and reproducibility
+- Clean structure and modular design
+- Readable code and thoughtful naming
+- Error handling and reproducibility
 
 ### Product Thinking
 
-* Sensible retrieval design
-* Thoughtful memory criteria
-* Clear tradeoffs explained in README/architecture
+- Sensible retrieval design
+- Thoughtful memory criteria
+- Clear tradeoffs explained in README/architecture
 
 ### Security Mindset (Bonus)
 
-* Prompt-injection awareness in RAG
-* Sandbox isolation (if implementing Feature C)
-* Safe handling of external API calls
+- Prompt-injection awareness in RAG
+- Sandbox isolation (if implementing Feature C)
+- Safe handling of external API calls
 
 ## Nice-to-Haves (Optional)
 
