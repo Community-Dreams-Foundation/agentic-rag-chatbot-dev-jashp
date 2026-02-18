@@ -5,6 +5,7 @@ import shutil
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from typing import List
 
 # Import our working intelligence layer!
 from backend.ingest.document_parser import ingest_document
@@ -26,29 +27,31 @@ class ChatRequest(BaseModel):
     message: str
 
 @app.post("/api/ingest")
-async def ingest_file(file: UploadFile = File(...)):
-    """Receives a file from the UI, saves it temporarily, and indexes it into ChromaDB."""
+async def ingest_files(files: List[UploadFile] = File(...)):
+    """Receives multiple files, processes them, and indexes them."""
     try:
-        # 1. Create a safe temporary directory for uploads
         temp_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "temp_uploads")
         os.makedirs(temp_dir, exist_ok=True)
-        file_path = os.path.join(temp_dir, file.filename)
         
-        # 2. Save the uploaded file
-        with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
+        total_chunks = 0
+        processed_files = []
+
+        for file in files:
+            file_path = os.path.join(temp_dir, file.filename)
+            with open(file_path, "wb") as buffer:
+                shutil.copyfileobj(file.file, buffer)
+                
+            # Pass to our upgraded document parser
+            result = ingest_document(file_path, file.filename)
             
-        # 3. Pass it to our document parser
-        result = ingest_document(file_path, file.filename)
-        
-        # 4. Clean up the temp file so we don't leak memory
-        if os.path.exists(file_path):
-            os.remove(file_path)
+            if os.path.exists(file_path):
+                os.remove(file_path)
+                
+            if result.get("status") == "success":
+                total_chunks += result.get("chunks_indexed", 0)
+                processed_files.append(file.filename)
             
-        if result.get("status") == "error":
-            raise HTTPException(status_code=500, detail=result.get("message"))
-            
-        return result
+        return {"status": "success", "processed_files": processed_files, "total_chunks": total_chunks}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

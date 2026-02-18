@@ -101,22 +101,24 @@ export default function TerminalUI() {
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    // Grab all selected files into an array
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
 
     const sysMsgUpload: Message = {
       id: Date.now().toString(),
       role: "system",
-      content: `Uploading ${file.name} to the RAG pipeline...`,
+      content: `Uploading ${files.length} file(s) to the RAG pipeline...`,
     };
     setHistory((prev) => [...prev, sysMsgUpload]);
 
-    // 1. Prepare the file for transit
+    // Append multiple files to the FormData object
     const formData = new FormData();
-    formData.append("file", file);
+    files.forEach((file) => {
+      formData.append("files", file); // Note: "files" is plural now!
+    });
 
     try {
-      // 2. Send it to FastAPI
       const response = await fetch("http://localhost:8000/api/ingest", {
         method: "POST",
         body: formData,
@@ -126,13 +128,12 @@ export default function TerminalUI() {
 
       const data = await response.json();
 
-      // 3. Confirm success in the terminal
       setHistory((prev) => [
         ...prev,
         {
           id: Date.now().toString(),
           role: "system",
-          content: `Success: ${data.filename} parsed, chunked, and indexed. Ready for queries.`,
+          content: `Success: Processed ${files.length} file(s). ${data.total_chunks} total chunks indexed.`,
         },
       ]);
     } catch (error) {
@@ -141,11 +142,11 @@ export default function TerminalUI() {
         {
           id: Date.now().toString(),
           role: "system",
-          content: `System Error: Failed to index ${file.name}. Ensure backend is running.`,
+          content: `System Error: Failed to index files. Ensure backend is running.`,
         },
       ]);
     } finally {
-      if (fileInputRef.current) fileInputRef.current.value = ""; // Reset input
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
@@ -162,6 +163,7 @@ export default function TerminalUI() {
         onChange={handleFileUpload}
         className="hidden"
         accept=".pdf,.txt,.md,.html"
+        multiple
       />
 
       {/* Output History Area */}
