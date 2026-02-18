@@ -39,13 +39,13 @@ export default function TerminalUI() {
       const command = inputValue.trim();
       setInputValue("");
 
-      // 1. Handle special /upload command
+      // Handle special /upload command
       if (command.toLowerCase() === "/upload") {
         fileInputRef.current?.click();
         return;
       }
 
-      // 2. Handle standard chat question
+      // Handle standard chat question
       const userMessage: Message = {
         id: Date.now().toString(),
         role: "user",
@@ -55,18 +55,48 @@ export default function TerminalUI() {
       setHistory((prev) => [...prev, userMessage]);
       setIsProcessing(true);
 
-      // TODO: Replace this timeout with your actual fetch/SSE call to the Python backend
-      // Mocking a streaming response for UI testing
-      setTimeout(() => {
-        const agentMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          role: "agent",
-          content:
-            "I found this in the architecture document. The system uses a LangGraph orchestration loop. [Source: ARCHITECTURE.md, Chunk: 04]",
-        };
-        setHistory((prev) => [...prev, agentMessage]);
+      // Create a temporary "streaming/loading" message
+      const tempAgentMsgId = (Date.now() + 1).toString();
+      setHistory((prev) => [
+        ...prev,
+        { id: tempAgentMsgId, role: "agent", content: "", isStreaming: true },
+      ]);
+
+      try {
+        // Send the query to the FastAPI backend
+        const response = await fetch("http://localhost:8000/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: command }),
+        });
+
+        if (!response.ok) throw new Error("Chat request failed");
+
+        const data = await response.json();
+
+        // Replace the temporary message with the actual agent response
+        setHistory((prev) =>
+          prev.map((msg) =>
+            msg.id === tempAgentMsgId
+              ? { ...msg, content: data.reply, isStreaming: false }
+              : msg,
+          ),
+        );
+      } catch (error) {
+        setHistory((prev) =>
+          prev.map((msg) =>
+            msg.id === tempAgentMsgId
+              ? {
+                  ...msg,
+                  content: "System Error: Could not reach the AI agent.",
+                  isStreaming: false,
+                }
+              : msg,
+          ),
+        );
+      } finally {
         setIsProcessing(false);
-      }, 1000);
+      }
     }
   };
 
@@ -81,19 +111,42 @@ export default function TerminalUI() {
     };
     setHistory((prev) => [...prev, sysMsgUpload]);
 
-    // TODO: Implement FormData POST to Python FastAPI /ingest endpoint here 
+    // 1. Prepare the file for transit
+    const formData = new FormData();
+    formData.append("file", file);
 
-    setTimeout(() => {
+    try {
+      // 2. Send it to FastAPI
+      const response = await fetch("http://localhost:8000/api/ingest", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) throw new Error("Ingestion failed");
+
+      const data = await response.json();
+
+      // 3. Confirm success in the terminal
       setHistory((prev) => [
         ...prev,
         {
-          id: (Date.now() + 1).toString(),
+          id: Date.now().toString(),
           role: "system",
-          content: `Success: ${file.name} parsed, chunked, and indexed. Ready for queries.`,
+          content: `Success: ${data.filename} parsed, chunked, and indexed. Ready for queries.`,
         },
       ]);
+    } catch (error) {
+      setHistory((prev) => [
+        ...prev,
+        {
+          id: Date.now().toString(),
+          role: "system",
+          content: `System Error: Failed to index ${file.name}. Ensure backend is running.`,
+        },
+      ]);
+    } finally {
       if (fileInputRef.current) fileInputRef.current.value = ""; // Reset input
-    }, 1500);
+    }
   };
 
   // --- Constants ---
