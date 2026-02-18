@@ -10,6 +10,7 @@ from typing import List
 # Import our working intelligence layer!
 from backend.ingest.document_parser import ingest_document
 from backend.core.graph import agent_executor
+import traceback
 
 app = FastAPI(title="Agentic RAG API")
 
@@ -57,19 +58,12 @@ async def ingest_files(files: List[UploadFile] = File(...)):
 
 @app.post("/api/chat")
 async def chat(request: ChatRequest):
-    """Passes the user's message to the LangGraph agent and returns the response."""
     try:
-        # Format the input exactly how our LangGraph expects it
         inputs = {"messages": [("user", request.message)]}
-        
-        # Invoke the agent synchronously for now to ensure stability
         response = agent_executor.invoke(inputs)
         
-        # Extract the raw content from the AI's last message
         final_message = response["messages"][-1].content
         
-        # FIX: Gemini often returns a list of dictionaries for its content. 
-        # We must flatten it into a plain string so ReactMarkdown doesn't crash.
         if isinstance(final_message, list):
             final_message = "".join(
                 block["text"] for block in final_message if isinstance(block, dict) and "text" in block
@@ -77,6 +71,10 @@ async def chat(request: ChatRequest):
         
         return {"reply": final_message}
     except Exception as e:
+        # FIX: Print the exact error to the terminal so we can debug it
+        print("\n=== FASTAPI CRASH LOG ===")
+        print(traceback.format_exc())
+        print("=========================\n")
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
