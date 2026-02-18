@@ -39,13 +39,13 @@ export default function TerminalUI() {
       const command = inputValue.trim();
       setInputValue("");
 
-      // 1. Handle special /upload command
+      // Handle special /upload command
       if (command.toLowerCase() === "/upload") {
         fileInputRef.current?.click();
         return;
       }
 
-      // 2. Handle standard chat question
+      // Handle standard chat question
       const userMessage: Message = {
         id: Date.now().toString(),
         role: "user",
@@ -55,45 +55,99 @@ export default function TerminalUI() {
       setHistory((prev) => [...prev, userMessage]);
       setIsProcessing(true);
 
-      // TODO: Replace this timeout with your actual fetch/SSE call to the Python backend
-      // Mocking a streaming response for UI testing
-      setTimeout(() => {
-        const agentMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          role: "agent",
-          content:
-            "I found this in the architecture document. The system uses a LangGraph orchestration loop. [Source: ARCHITECTURE.md, Chunk: 04]",
-        };
-        setHistory((prev) => [...prev, agentMessage]);
+      // Create a temporary "streaming/loading" message
+      const tempAgentMsgId = (Date.now() + 1).toString();
+      setHistory((prev) => [
+        ...prev,
+        { id: tempAgentMsgId, role: "agent", content: "", isStreaming: true },
+      ]);
+
+      try {
+        // Send the query to the FastAPI backend
+        const response = await fetch("http://localhost:8000/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: command }),
+        });
+
+        if (!response.ok) throw new Error("Chat request failed");
+
+        const data = await response.json();
+
+        // Replace the temporary message with the actual agent response
+        setHistory((prev) =>
+          prev.map((msg) =>
+            msg.id === tempAgentMsgId
+              ? { ...msg, content: data.reply, isStreaming: false }
+              : msg,
+          ),
+        );
+      } catch (error) {
+        setHistory((prev) =>
+          prev.map((msg) =>
+            msg.id === tempAgentMsgId
+              ? {
+                  ...msg,
+                  content: "System Error: Could not reach the AI agent.",
+                  isStreaming: false,
+                }
+              : msg,
+          ),
+        );
+      } finally {
         setIsProcessing(false);
-      }, 1000);
+      }
     }
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    // Grab all selected files into an array
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
 
     const sysMsgUpload: Message = {
       id: Date.now().toString(),
       role: "system",
-      content: `Uploading ${file.name} to the RAG pipeline...`,
+      content: `Uploading ${files.length} file(s) to the RAG pipeline...`,
     };
     setHistory((prev) => [...prev, sysMsgUpload]);
 
-    // TODO: Implement FormData POST to Python FastAPI /ingest endpoint here 
+    // Append multiple files to the FormData object
+    const formData = new FormData();
+    files.forEach((file) => {
+      formData.append("files", file); // Note: "files" is plural now!
+    });
 
-    setTimeout(() => {
+    try {
+      const response = await fetch("http://localhost:8000/api/ingest", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) throw new Error("Ingestion failed");
+
+      const data = await response.json();
+
       setHistory((prev) => [
         ...prev,
         {
-          id: (Date.now() + 1).toString(),
+          id: Date.now().toString(),
           role: "system",
-          content: `Success: ${file.name} parsed, chunked, and indexed. Ready for queries.`,
+          content: `Success: Processed ${files.length} file(s). ${data.total_chunks} total chunks indexed.`,
         },
       ]);
-      if (fileInputRef.current) fileInputRef.current.value = ""; // Reset input
-    }, 1500);
+    } catch (error) {
+      setHistory((prev) => [
+        ...prev,
+        {
+          id: Date.now().toString(),
+          role: "system",
+          content: `System Error: Failed to index files. Ensure backend is running.`,
+        },
+      ]);
+    } finally {
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
   };
 
   // --- Constants ---
@@ -109,6 +163,7 @@ export default function TerminalUI() {
         onChange={handleFileUpload}
         className="hidden"
         accept=".pdf,.txt,.md,.html"
+        multiple
       />
 
       {/* Output History Area */}
