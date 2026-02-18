@@ -1,0 +1,1 @@
+# PDF parsing, semantic chunking, and Chroma indexing
