@@ -34,7 +34,9 @@ export default function TerminalUI() {
   }, [history]);
 
   // --- Handlers ---
-  const handleCommand = async (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleCommand = async (
+    e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
     if (e.key === "Enter" && inputValue.trim() && !isProcessing) {
       const command = inputValue.trim();
       setInputValue("");
@@ -151,11 +153,12 @@ export default function TerminalUI() {
   };
 
   // --- Constants ---
-  const cliPrompt = "dev-jash15@agentic-rag:~$ ";
+  const cliPrompt = "dev-jash@agentic-rag:~$ ";
 
   // --- Render ---
   return (
-    <div className="flex flex-col h-screen bg-slate-950 text-slate-300 font-mono text-sm sm:text-base overflow-hidden selection:bg-emerald-900 selection:text-emerald-100">
+    // Added w-full to ensure the main screen is strictly locked to the viewport width
+    <div className="flex flex-col h-screen w-full bg-slate-950 text-slate-300 font-mono text-sm sm:text-base overflow-hidden selection:bg-emerald-900 selection:text-emerald-100">
       {/* Hidden File Input */}
       <input
         type="file"
@@ -165,49 +168,66 @@ export default function TerminalUI() {
         accept=".pdf,.txt,.md,.html"
         multiple
       />
-
-      {/* Output History Area */}
-      <div className="flex-1 overflow-y-auto p-4 sm:p-6 pb-24 space-y-4 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 space-y-4 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent w-full">
         {history.map((msg) => (
-          <div key={msg.id} className="flex flex-col gap-1">
+          <div key={msg.id} className="flex flex-col gap-1 w-full max-w-full">
             {msg.role === "user" && (
-              <div className="text-emerald-400">
+              <div className="text-emerald-400 break-all whitespace-pre-wrap">
+                {/* FIX 2: Added whitespace-pre-wrap to force the string to respect the container width */}
                 <span className="font-bold">{cliPrompt}</span>
                 {msg.content}
               </div>
             )}
 
             {msg.role === "agent" && (
-              <div className="text-slate-100 prose prose-invert prose-emerald max-w-none">
+              <div className="text-slate-100 prose prose-invert prose-emerald max-w-none break-words prose-pre:overflow-x-auto">
+                {/* Added prose-pre:overflow-x-auto so if the AI writes a code block, ONLY the code block scrolls, not the page */}
                 <ReactMarkdown>{msg.content}</ReactMarkdown>
                 {msg.isStreaming && <span className="animate-pulse">_</span>}
               </div>
             )}
 
             {msg.role === "system" && (
-              <div className="text-amber-500/80 italic">
+              <div className="text-amber-500/80 italic break-words whitespace-pre-wrap">
                 {`> ${msg.content}`}
               </div>
             )}
           </div>
         ))}
         {/* Invisible div to scroll to */}
-        <div ref={bottomRef} />
+        <div ref={bottomRef} className="h-2" />
       </div>
 
       {/* Command Line Input Area */}
-      <div className="fixed bottom-0 w-full bg-slate-950 p-4 sm:p-6 border-t border-slate-800">
-        <div className="flex items-center gap-2 max-w-full">
-          <span className="text-emerald-400 font-bold whitespace-nowrap">
+      <div className="shrink-0 bg-slate-950 p-4 sm:p-6 border-t border-slate-800 w-full">
+        {/* FIX 2: Changed 'items-center' to 'items-start' so the green prompt stays pinned to the top line as the box grows */}
+        <div className="flex items-start gap-2 max-w-full">
+          {/* FIX 3: Added a tiny padding-top (pt-[2px]) to perfectly align the span baseline with the textarea text */}
+          <span className="text-emerald-400 font-bold whitespace-nowrap pt-[2px]">
             {cliPrompt}
           </span>
-          <input
-            type="text"
+
+          {/* FIX 4: Swapped <input> for a magical auto-expanding <textarea> */}
+          <textarea
             value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={handleCommand}
+            onChange={(e) => {
+              setInputValue(e.target.value);
+              // Instantly auto-expand the height as the user types multiple lines
+              e.target.style.height = "auto";
+              e.target.style.height = `${e.target.scrollHeight}px`;
+            }}
+            onKeyDown={(e) => {
+              // Pressing 'Enter' submits the prompt. 'Shift+Enter' will allow a manual new line.
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault(); // Stop it from creating a blank new line
+                handleCommand(e);
+                // Reset the box height back to 1 row after submitting
+                (e.target as HTMLTextAreaElement).style.height = "auto";
+              }
+            }}
             disabled={isProcessing}
-            className="flex-1 bg-transparent border-none outline-none text-slate-100 disabled:opacity-50 w-full"
+            className="flex-1 bg-transparent border-none outline-none text-slate-100 disabled:opacity-50 w-full min-w-0 resize-none overflow-hidden max-h-40 leading-normal"
+            rows={1}
             autoFocus
             spellCheck={false}
             autoComplete="off"
