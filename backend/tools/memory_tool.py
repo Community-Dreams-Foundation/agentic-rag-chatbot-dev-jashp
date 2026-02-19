@@ -48,3 +48,25 @@ def save_memory(should_write: bool, target: str, summary: str, confidence: float
         return f"Successfully saved memory to {target}_MEMORY.md: '{summary}'"
     except Exception as e:
         return f"System Error: Failed to save memory: {str(e)}"
+    
+@tool("get_memory")
+def get_memory() -> str:
+    """
+    Retrieves all stored high-signal knowledge from both USER and COMPANY memory files.
+    Always call this at the start of a session or when needing context on user preferences.
+    """
+    memories = []
+    
+    for path, label in [(USER_MEMORY_PATH, "USER"), (COMPANY_MEMORY_PATH, "COMPANY")]:
+        if os.path.exists(path):
+            try:
+                with open(path, "r") as f:
+                    content = f.read().strip()
+                    if content:
+                        memories.append(f"--- {label} MEMORY ---\n{content}")
+            except Exception as e:
+                memories.append(f"Error reading {label} memory: {str(e)}")
+        else:
+            memories.append(f"--- {label} MEMORY ---\n(Empty: No facts stored yet)")
+
+    return "\n\n".join(memories)

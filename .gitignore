@@ -2,7 +2,6 @@
 # 1. SECRETS & ENVIRONMENT VARIABLES (CRITICAL)
 # ==========================================
 .env
-.env.*
 *.pem
 secret.key
 
