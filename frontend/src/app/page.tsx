@@ -155,6 +155,25 @@ export default function TerminalUI() {
   // --- Constants ---
   const cliPrompt = "dev-jash@agentic-rag:~$ ";
 
+  const getStatusMessage = (input: string) => {
+    const cmd = input.toLowerCase();
+    if (
+      cmd.includes("weather") ||
+      cmd.includes("temperature") ||
+      cmd.includes("forecast")
+    ) {
+      return "Fetching weather data and running analytics...";
+    }
+    if (
+      cmd.includes("calculate") ||
+      cmd.includes("python") ||
+      cmd.includes("script")
+    ) {
+      return "Executing Python sandbox...";
+    }
+    return "Searching documents and generating response...";
+  };
+
   // --- Render ---
   return (
     // Added w-full to ensure the main screen is strictly locked to the viewport width
@@ -172,7 +191,7 @@ export default function TerminalUI() {
         {history.map((msg) => (
           <div key={msg.id} className="flex flex-col gap-1 w-full max-w-full">
             {msg.role === "user" && (
-              <div className="text-emerald-400 break-all whitespace-pre-wrap">
+              <div className="text-emerald-400 break-words whitespace-pre-wrap">
                 {/* FIX 2: Added whitespace-pre-wrap to force the string to respect the container width */}
                 <span className="font-bold">{cliPrompt}</span>
                 {msg.content}
@@ -180,10 +199,22 @@ export default function TerminalUI() {
             )}
 
             {msg.role === "agent" && (
-              <div className="text-slate-100 prose prose-invert prose-emerald max-w-none break-words prose-pre:overflow-x-auto">
-                {/* Added prose-pre:overflow-x-auto so if the AI writes a code block, ONLY the code block scrolls, not the page */}
-                <ReactMarkdown>{msg.content}</ReactMarkdown>
-                {msg.isStreaming && <span className="animate-pulse">_</span>}
+              <div className="text-slate-100 prose prose-invert prose-emerald max-w-none break-words">
+                {msg.isStreaming && !msg.content ? (
+                  <div className="flex items-center gap-2 text-amber-500/80 italic">
+                    <span className="animate-pulse">●</span>
+                    {getStatusMessage(
+                      history[history.length - 2]?.content || "",
+                    )}
+                  </div>
+                ) : (
+                  <>
+                    <ReactMarkdown>{msg.content}</ReactMarkdown>
+                    {msg.isStreaming && (
+                      <span className="animate-pulse">_</span>
+                    )}
+                  </>
+                )}
               </div>
             )}
 
