@@ -201,10 +201,6 @@ Note: Ensure your Python virtual environment is activated before running the scr
 
 ---
 
-## Video Walkthrough Link (Required)
+## 🎥 Video Walkthrough Link
 
-Add your video link here:
-
-## Video Walkthrough
-
-PASTE YOUR LINK HERE
+[Watch the video](https://youtu.be/KvnhgrCa-t0?si=cX8Xjy1pyFERegTo)
