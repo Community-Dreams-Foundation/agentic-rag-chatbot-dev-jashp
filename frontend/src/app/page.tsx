@@ -18,7 +18,7 @@ export default function TerminalUI() {
       id: "init",
       role: "system",
       content:
-        "Welcome to Agentic RAG CLI. Type `/upload` to index a document, or ask a question.",
+        "Welcome to Agentic RAG CLI. Type `/upload` to index a document(s), or ask a question.",
     },
   ]);
   const [inputValue, setInputValue] = useState("");
@@ -157,21 +157,32 @@ export default function TerminalUI() {
 
   const getStatusMessage = (input: string) => {
     const cmd = input.toLowerCase();
-    if (
-      cmd.includes("weather") ||
-      cmd.includes("temperature") ||
-      cmd.includes("forecast")
-    ) {
-      return "Fetching weather data and running analytics...";
+
+    // Feature C: Python & Weather Logic
+    if (cmd.includes("weather") || cmd.includes("temperature")) {
+      return "Accessing Open-Meteo API...";
     }
     if (
-      cmd.includes("calculate") ||
       cmd.includes("python") ||
-      cmd.includes("script")
+      cmd.includes("script") ||
+      cmd.includes("calculate") ||
+      cmd.includes("compare")
     ) {
       return "Executing Python sandbox...";
     }
-    return "Searching documents and generating response...";
+
+    // Feature A: RAG Logic
+    if (
+      cmd.includes("document") ||
+      cmd.includes("project") ||
+      cmd.includes("what is") ||
+      cmd.includes("about")
+    ) {
+      return "Searching indexed documents...";
+    }
+
+    // Default Fallback
+    return "Agentic RAG is thinking...";
   };
 
   // --- Render ---
@@ -201,19 +212,51 @@ export default function TerminalUI() {
             {msg.role === "agent" && (
               <div className="text-slate-100 prose prose-invert prose-emerald max-w-none break-words">
                 {msg.isStreaming && !msg.content ? (
-                  <div className="flex items-center gap-2 text-amber-500/80 italic">
-                    <span className="animate-pulse">●</span>
-                    {getStatusMessage(
-                      history[history.length - 2]?.content || "",
-                    )}
+                  <div className="flex items-center gap-2 text-emerald-500/60 font-mono italic">
+                    <span className="animate-spin h-3 w-3 border-2 border-emerald-500 border-t-transparent rounded-full" />
+                    <span>
+                      {getStatusMessage(
+                        history[history.length - 2]?.content || "",
+                      )}
+                    </span>
                   </div>
                 ) : (
-                  <>
-                    <ReactMarkdown>{msg.content}</ReactMarkdown>
+                  <div className="flex flex-col gap-2">
+                    <ReactMarkdown
+                      components={{
+                        p: ({ children }) => {
+                          if (typeof children === "string") {
+                            // Regex to find [Source: X, Chunk: Y]
+                            const parts = children.split(
+                              /(\[Source:.*?, Chunk:.*?\])/g,
+                            );
+                            return (
+                              <p>
+                                {parts.map((part, i) =>
+                                  part.startsWith("[Source:") ? (
+                                    <span
+                                      key={i}
+                                      className="text-slate-400 text-[10px] font-mono bg-slate-800/40 px-1.5 py-0.5 rounded border border-slate-700/50 ml-1 inline-block align-middle"
+                                    >
+                                      {part}
+                                    </span>
+                                  ) : (
+                                    part
+                                  ),
+                                )}
+                              </p>
+                            );
+                          }
+                          return <p>{children}</p>;
+                        },
+                      }}
+                    >
+                      {msg.content}
+                    </ReactMarkdown>
                     {msg.isStreaming && (
-                      <span className="animate-pulse">_</span>
+                      <span className="animate-pulse text-emerald-400">_</span>
                     )}
-                  </>
+                  </div>
                 )}
               </div>
             )}
