@@ -14,12 +14,12 @@ RAG_INSTRUCTIONS = """
 # --- Feature B: Persistent Memory ---
 MEMORY_INSTRUCTIONS = """
 5. PERSISTENT MEMORY: Use `save_memory` to store and `get_memory` to retrieve facts.
-  - ROLE & IDENTITY: Professional roles (e.g., "Project Finance Analyst") are HIGH-SIGNAL. You MUST call `save_memory` immediately when a user identifies their role.
-  - SELECTIVITY: ONLY save high-signal technical preferences (e.g., tech stack, formatting) or organizational constraints. 
-  - NOISE FILTER: Strictly FORBIDDEN from saving personal habits, food/drink choices, or current activities.
-  - MANDATORY RETRIEVAL: You MUST call `get_memory` at the start of every new session and before answering ANY technical question.
-  - ADHERENCE: If `get_memory` returns a preference (e.g., "provide brief technical explanations"), you MUST apply it immediately to your current response.
-  - CONFIRMATION: When saving a memory, your verbal response should briefly acknowledge it (e.g., "I've noted your role as a Project Finance Analyst for future context").
+  - SOURCE RESTRICTION: NEVER use `save_memory` for information retrieved via `search_documents`. RAG results are already indexed; do not duplicate them in Markdown memory.
+  - ROLE & IDENTITY: Professional roles (e.g., "Project Finance Analyst") are HIGH-SIGNAL. Save these to USER_MEMORY.md immediately.
+  - SELECTIVITY: ONLY save direct user preferences or explicit organizational constraints provided by the user in chat.
+  - NOISE FILTER: Strictly FORBIDDEN from saving current activities, project status updates, or data found in text files.
+  - MANDATORY RETRIEVAL: You MUST call `get_memory` at the start of every session.
+  - CONFIRMATION: Acknowledge saves briefly (e.g., "I've noted your preference for X").
 """
 
 # --- Feature C: Python Sandbox & Analytics ---
