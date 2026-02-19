@@ -1,8 +1,10 @@
+# Makefile
+PYTHON := $(shell command -v python3 2> /dev/null || command -v python 2> /dev/null)
+
 .PHONY: sanity
 
-# The judges will run this command
+# The judges will run this command to generate the required artifact
 sanity:
-	@echo "Running sanity checks..."
+	@echo "Using Python: $(PYTHON)"
 	@mkdir -p artifacts
-	@python -m backend.sanity_check
-	@echo "make sanity sequence completed."
+	@$(PYTHON) scripts/generate_sanity_output.py
