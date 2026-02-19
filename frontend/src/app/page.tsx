@@ -155,34 +155,9 @@ export default function TerminalUI() {
   // --- Constants ---
   const cliPrompt = "dev-jash@agentic-rag:~$ ";
 
-  const getStatusMessage = (input: string) => {
-    const cmd = input.toLowerCase();
-
-    // Feature C: Python & Weather Logic
-    if (cmd.includes("weather") || cmd.includes("temperature")) {
-      return "Accessing Open-Meteo API...";
-    }
-    if (
-      cmd.includes("python") ||
-      cmd.includes("script") ||
-      cmd.includes("calculate") ||
-      cmd.includes("compare")
-    ) {
-      return "Executing Python sandbox...";
-    }
-
-    // Feature A: RAG Logic
-    if (
-      cmd.includes("document") ||
-      cmd.includes("project") ||
-      cmd.includes("what is") ||
-      cmd.includes("about")
-    ) {
-      return "Searching indexed documents...";
-    }
-
-    // Default Fallback
-    return "Agentic RAG is thinking...";
+  const getStatusMessage = () => {
+    // Return one consistent, professional message for all actions
+    return "Agentic RAG is processing your request...";
   };
 
   // --- Render ---
@@ -214,40 +189,39 @@ export default function TerminalUI() {
                 {msg.isStreaming && !msg.content ? (
                   <div className="flex items-center gap-2 text-emerald-500/60 font-mono italic">
                     <span className="animate-spin h-3 w-3 border-2 border-emerald-500 border-t-transparent rounded-full" />
-                    <span>
-                      {getStatusMessage(
-                        history[history.length - 2]?.content || "",
-                      )}
-                    </span>
+                    <span>{getStatusMessage()}</span>
                   </div>
                 ) : (
                   <div className="flex flex-col gap-2">
                     <ReactMarkdown
                       components={{
                         p: ({ children }) => {
-                          if (typeof children === "string") {
-                            // Regex to find [Source: X, Chunk: Y]
-                            const parts = children.split(
-                              /(\[Source:.*?, Chunk:.*?\])/g,
-                            );
-                            return (
-                              <p>
-                                {parts.map((part, i) =>
-                                  part.startsWith("[Source:") ? (
-                                    <span
-                                      key={i}
-                                      className="text-slate-400 text-[10px] font-mono bg-slate-800/40 px-1.5 py-0.5 rounded border border-slate-700/50 ml-1 inline-block align-middle"
-                                    >
-                                      {part}
-                                    </span>
-                                  ) : (
-                                    part
-                                  ),
-                                )}
-                              </p>
-                            );
-                          }
-                          return <p>{children}</p>;
+                          const formatCitations = (child: any) => {
+                            if (typeof child === "string") {
+                              const parts = child.split(
+                                /(\[Source:.*?, Chunk:.*?\])/g,
+                              );
+                              return parts.map((part, i) =>
+                                part.startsWith("[Source:") ? (
+                                  <span
+                                    key={i}
+                                    className="text-slate-400 text-[10px] font-mono bg-slate-800/40 px-1.5 py-0.5 rounded border border-slate-700/50 ml-1 inline-block align-middle opacity-80 hover:opacity-100 transition-opacity"
+                                  >
+                                    {part}
+                                  </span>
+                                ) : (
+                                  part
+                                ),
+                              );
+                            }
+                            return child; // Return bold/italic elements as-is
+                          };
+
+                          return (
+                            <p className="mb-4 last:mb-0">
+                              {React.Children.map(children, formatCitations)}
+                            </p>
+                          );
                         },
                       }}
                     >
