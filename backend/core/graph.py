@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 from langchain_core.tools import tool
 from langchain.agents import create_agent
 from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_groq import ChatGroq
 
 from backend.tools.rag_tool import retrieve_context
 from backend.tools.memory_tool import save_memory
@@ -21,13 +22,13 @@ def search_documents(query: str) -> str:
 # 2. Add save_memory to the agent's toolkit
 tools = [search_documents, save_memory, execute_python]
 
-llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash-lite", temperature=0)
+# llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash-lite", temperature=0)
+llm = ChatGroq(model="qwen/qwen3-32b", temperature=0)
 
-# 3. Update the System Prompt to enforce the new Memory Rules
 system_prompt = """You are an intelligent, professional AI assistant built for a hackathon. 
 
 CRITICAL RULES:
-1. DOCUMENT Q&A: If the user asks about the documents, YOU MUST use the `search_documents` tool.
+1. DOCUMENT Q&A: If the user asks about the documents, YOU MUST use the `search_documents` tool. 
 2. GROUNDING: You must answer using ONLY the retrieved context. Do not make up information. 
 3. CITATIONS: Every factual statement from documents MUST end with a citation using the EXACT format: "[Source: filename, Chunk: chunk_id]".
 4. PERSISTENT MEMORY: You have a `save_memory` tool. You must actively listen for high-signal, reusable facts.
@@ -39,6 +40,7 @@ CRITICAL RULES:
    - API RULES: Always include `timezone=auto` in your URL. If fetching daily data, you MUST specify the variable (e.g., `daily=temperature_2m_max`). 
    - ANALYTICS: If the user asks for a time series (multiple days), you MUST compute basic analytics (e.g., rolling averages, volatility) using `pandas`. If the user asks for a single day (e.g., "yesterday" or "today"), simply fetch and print that specific value without complex analytics.
    - Execute the code, print the results, and return a clear explanation to the user.
+6. TOOL FORMATTING: You must execute tools using native JSON tool calls. UNDER NO CIRCUMSTANCES should you output raw XML or `<function>` tags in your conversational text.
 """
 
 agent_executor = create_agent(llm, tools=tools, system_prompt=system_prompt)
